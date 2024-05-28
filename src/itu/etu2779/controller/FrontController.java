@@ -3,6 +3,7 @@ package itu.etu2779.controller;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -82,11 +83,18 @@ public class FrontController extends HttpServlet {
         String urlTyped = parts[parts.length - 1];
         for (String cle : mapping.keySet()) {
             if (cle.equals(urlTyped)) {
-                out.println(String.format("url: %s", urlTyped));
-                Mapper map = mapping.get(urlTyped);
-                out.println(String.format("nom classe: %s", map.getNomClasse()));
-                out.println(String.format("nom methode: %s", map.getNomMethode()));
-                present = true;
+                try {
+                    out.println(String.format("url: %s", urlTyped));
+                    Mapper map = mapping.get(urlTyped);
+                    Class<?> clazz = Class.forName(map.getNomClasse());
+                    Method met = clazz.getDeclaredMethod(map.getNomMethode());
+                    Object objet = clazz.newInstance();
+                    String resultat = (String) met.invoke(objet);
+                    out.println(String.format("Resultat: %s", resultat));
+                    present = true;
+                } catch (ClassNotFoundException | NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | InstantiationException e) {
+                    e.printStackTrace();
+                } 
             }
         }
         if (!present) {
