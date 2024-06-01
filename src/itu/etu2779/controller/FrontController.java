@@ -8,8 +8,10 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.net.URL;
 
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -18,6 +20,7 @@ import javax.servlet.http.HttpServletResponse;
 import itu.etu2779.annotation.Controller;
 import itu.etu2779.annotation.Get;
 import itu.etu2779.mapping.Mapper;
+import itu.etu2779.servlet.ModelAndView;
 
 public class FrontController extends HttpServlet {
 
@@ -88,11 +91,21 @@ public class FrontController extends HttpServlet {
                     Mapper map = mapping.get(urlTyped);
                     Class<?> clazz = Class.forName(map.getNomClasse());
                     Method met = clazz.getDeclaredMethod(map.getNomMethode());
-                    Object objet = clazz.newInstance();
-                    String resultat = (String) met.invoke(objet);
-                    out.println(String.format("Resultat: %s", resultat));
+                    Object objet = met.invoke(clazz.newInstance());
+                    if (objet instanceof String) {
+                        String resultat = (String) objet;
+                        out.println(String.format("Resultat: %s", resultat));
+                    } else {
+                        ModelAndView model = (ModelAndView) objet;
+                        for (Map.Entry<String, Object> entry : model.getData().entrySet()) {
+                            req.setAttribute(entry.getKey(), entry.getValue());
+                        }
+                        RequestDispatcher dispatcher = req.getRequestDispatcher(model.getUrl());
+                        dispatcher.forward(req, res);
+                    }
                     present = true;
                 } catch (ClassNotFoundException | NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | InstantiationException e) {
+                    out.println(e);
                     e.printStackTrace();
                 } 
             }
