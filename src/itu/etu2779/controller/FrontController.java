@@ -44,7 +44,6 @@ public class FrontController extends HttpServlet {
         res.setContentType("text/plain");
         PrintWriter out = res.getWriter();
 
-        Boolean present = false;
         String path = req.getRequestURI();
         String[] parts = path.split("/");
         String urlTyped = parts[parts.length - 1];
@@ -73,9 +72,6 @@ public class FrontController extends HttpServlet {
                     out.println(e);
                 } 
             }
-        }
-        if (!present) {
-            throw new ServletException("Pas d'URL trouvé");
         }
     }
 }
