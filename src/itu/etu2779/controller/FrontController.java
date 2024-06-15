@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -15,9 +16,11 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import itu.etu2779.annotation.Param;
 import itu.etu2779.mapping.LoadController;
 import itu.etu2779.mapping.Mapper;
 import itu.etu2779.servlet.ModelAndView;
+import itu.etu2779.utils.Utilitaire;
 
 public class FrontController extends HttpServlet {
 
@@ -52,26 +55,49 @@ public class FrontController extends HttpServlet {
                 try {
                     Mapper map = mapping.get(urlTyped);
                     Class<?> clazz = Class.forName(map.getNomClasse());
-                    Method met = clazz.getDeclaredMethod(map.getNomMethode());
-                    Object objet = met.invoke(clazz.newInstance());
-                    if (objet instanceof String) {
-                        String resultat = (String) objet;
-                        out.println(String.format("Resultat: %s", resultat));
-                        return;
-                    } else if(objet instanceof ModelAndView) {
-                        ModelAndView model = (ModelAndView) objet;
-                        for (Map.Entry<String, Object> entry : model.getData().entrySet()) {
-                            req.setAttribute(entry.getKey(), entry.getValue());
+                    Method[] methods = clazz.getDeclaredMethods();
+                    for (int i = 0; i < methods.length; i++) {
+                        if (methods[i].getName().equals(map.getNomMethode())) {
+                            Parameter[] param = methods[i].getParameters();
+                            Class<?>[] parameterTypes = methods[i].getParameterTypes();
+                            String [] name = parameterTypes.length != 0 ? new String[param.length] : null;
+                            Object[] values = parameterTypes.length != 0 ? new Object[param.length] : null;
+                            for (int j = 0; j < param.length; j++) {
+                                name[j] = param[j].getName();
+                                if (param[j].isAnnotationPresent(Param.class)) {
+                                    String annotationValue = param[j].getAnnotation(Param.class).name();
+                                    String parameter = req.getParameter(annotationValue);
+                                    values[j] = Utilitaire.getRealParameterType(parameterTypes[j], parameter);
+                                } else {
+                                    String parameter = req.getParameter(name[j]);
+                                    values[j] = Utilitaire.getRealParameterType(parameterTypes[j], parameter);
+                                }
+                            }
+        
+                            Object objet = methods[i].invoke(clazz.newInstance(), values);
+                            if (objet instanceof String) {
+                                String resultat = (String) objet;
+                                out.println(String.format("Resultat: %s", resultat));
+                                return;
+                            } else if(objet instanceof ModelAndView) {                    
+                                out.print("foru");
+                                ModelAndView model = (ModelAndView) objet;
+                                
+                                for (Map.Entry<String, Object> entry : model.getData().entrySet()) {
+                                    req.setAttribute(entry.getKey(), entry.getValue());
+                                }
+                                RequestDispatcher dispatcher = req.getRequestDispatcher(model.getUrl());
+                                dispatcher.forward(req, res);
+                                return;
+                            }
                         }
-                        RequestDispatcher dispatcher = req.getRequestDispatcher(model.getUrl());
-                        dispatcher.forward(req, res);
-                        return;
                     }
                     throw new ServletException("La valeur du type de retour de la fonction doit être de type String ou ModelAndView");
-                } catch (ClassNotFoundException | NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | InstantiationException e) {
+                } catch (ClassNotFoundException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | InstantiationException e) {
                     out.println(e);
                 } 
             }
         }
+        res.sendError(HttpServletResponse.SC_NOT_FOUND, "Pas d'URL trouve");
     }
 }
