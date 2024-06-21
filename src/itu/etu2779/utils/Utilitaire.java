@@ -20,22 +20,38 @@ public class Utilitaire {
         try {
             switch (clazz.getName()) {
                 case "java.lang.String":
-                    result = parameter;
+                    if (parameter.equals("")) {
+                        result = "null";
+                    } else {
+                        result = parameter;
+                    }
                     break;
                 case "int":
-                    result = Integer.parseInt(parameter);
+                    if (parameter.equals("")) {
+                        result = 0;
+                    } else {
+                        result = Integer.parseInt(parameter);
+                    }
                     break;
                 case "double":
-                    result = Double.parseDouble(parameter);
+                    if (parameter.equals("")) {
+                        result = 0.0;
+                    } else {
+                        result = Double.parseDouble(parameter);
+                    }
                     break;
                 case "java.util.Date":
-                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-                    Date date = sdf.parse(parameter);
-                    result = date;
+                    if(parameter.equals("")){
+                        result = new Date();
+                    } else {
+                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                        Date date = sdf.parse(parameter);
+                        result = date;
+                    }
                     break;
             }
             return result;
-        } catch (ClassCastException | ParseException e) {
+        } catch (ClassCastException | ParseException | NumberFormatException e) {
             throw new ServletException("Type de parametre incoherent avec sa valeur");
         }
     }
