@@ -79,6 +79,6 @@ public class FrontController extends HttpServlet {
                 } 
             }
         }
-        // res.sendError(HttpServletResponse.SC_NOT_FOUND, "Pas d'URL trouve");
+        res.sendError(HttpServletResponse.SC_NOT_FOUND, "Pas d'URL trouve");
     }
 }
