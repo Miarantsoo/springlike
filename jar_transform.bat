@@ -4,7 +4,7 @@ set "project=%~dp0"
 set dev=C:\Users\Miarantsoa\ITU\S4\Web Dynamic\Framework\testWeb\lib
 set lib=%project%lib\
 
-set classpath="%lib%paranamer-2.8.jar;%lib%servlet-api.jar"
+set classpath="%lib%paranamer-2.8.jar;%lib%servlet-api.jar;%lib%gson-2.8.8.jar"
 echo %classpath%
 
 javac -d bin -sourcepath src -cp %classpath% src/itu/etu2779/controller/*.java src/itu/etu2779/utils/*.java src/itu/etu2779/annotation/*.java src/itu/etu2779/mapping/*.java src/itu/etu2779/servlet/*.java
