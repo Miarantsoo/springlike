@@ -2,7 +2,6 @@ package itu.etu2779.controller;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -17,6 +16,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import com.google.gson.Gson;
+
+import itu.etu2779.annotation.RestAPI;
 import itu.etu2779.mapping.LoadController;
 import itu.etu2779.mapping.Mapper;
 import itu.etu2779.servlet.CustomSession;
@@ -45,7 +47,7 @@ public class FrontController extends HttpServlet {
     }
 
     protected void processRequest(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
-        res.setContentType("text/plain");
+        res.setContentType("application/json");
         PrintWriter out = res.getWriter();
 
         String path = req.getRequestURI();
@@ -63,29 +65,41 @@ public class FrontController extends HttpServlet {
                     for (int i = 0; i < methods.length; i++) {
                         if (methods[i].getName().equals(map.getNomMethode())) {
                             Object objet = Utilitaire.invokeMethod(clazz, methods[i], req, session, cs);
-                            if (objet instanceof String) {
-                                String resultat = (String) objet;
-                                out.println(String.format("Resultat: %s", resultat));
-
-                                if (cs[0] != null) {
-                                    cs[0].customToHttpSession(session);
+                            if (methods[i].isAnnotationPresent(RestAPI.class)) {
+                                Gson gson = new Gson();
+                                if (objet instanceof ModelAndView) {
+                                    ModelAndView model = (ModelAndView) objet;
+                                    String json = gson.toJson(model.getData());
+                                    out.println(json);
+                                } else {
+                                    String json = gson.toJson(objet);
+                                    out.println(json);
                                 }
-
-                                return;
-                            } else if(objet instanceof ModelAndView) {                    
-                                ModelAndView model = (ModelAndView) objet;
-                                
-                                for (Map.Entry<String, Object> entry : model.getData().entrySet()) {
-                                    req.setAttribute(entry.getKey(), entry.getValue());
+                            } else {
+                                if (objet instanceof String) {
+                                    String resultat = (String) objet;
+                                    out.println(String.format("Resultat: %s", resultat));
+    
+                                    if (cs[0] != null) {
+                                        cs[0].customToHttpSession(session);
+                                    }
+    
+                                    return;
+                                } else if(objet instanceof ModelAndView) {                    
+                                    ModelAndView model = (ModelAndView) objet;
+                                    
+                                    for (Map.Entry<String, Object> entry : model.getData().entrySet()) {
+                                        req.setAttribute(entry.getKey(), entry.getValue());
+                                    }
+    
+                                    if (cs[0] != null) {
+                                        cs[0].customToHttpSession(session);
+                                    }
+    
+                                    RequestDispatcher dispatcher = req.getRequestDispatcher(model.getUrl());
+                                    dispatcher.forward(req, res);
+                                    return;
                                 }
-
-                                if (cs[0] != null) {
-                                    cs[0].customToHttpSession(session);
-                                }
-
-                                RequestDispatcher dispatcher = req.getRequestDispatcher(model.getUrl());
-                                dispatcher.forward(req, res);
-                                return;
                             }
                         }
                     }
