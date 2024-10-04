@@ -10,6 +10,9 @@ import javax.servlet.ServletException;
 
 import itu.etu2779.annotation.Controller;
 import itu.etu2779.annotation.Get;
+import itu.etu2779.annotation.Post;
+import itu.etu2779.annotation.Url;
+import itu.etu2779.utils.Utilitaire;
 
 public class LoadController {
     
@@ -41,11 +44,28 @@ public class LoadController {
         for (Class<?> clazz : nomController) {
             Method [] methods = clazz.getDeclaredMethods();
             for (Method method : methods) {
-                if(method.isAnnotationPresent(Get.class)){
-                    String url = method.getAnnotation(Get.class).path();
-                    Mapper map = new Mapper(method.getDeclaringClass().getName(), method.getName());
-                    if (!mapping.containsKey(url)) {
-                        mapping.put(url, map);
+                boolean isGetNotPresent = Utilitaire.isGetNotPresent(method);
+                String path = "";
+                if(method.isAnnotationPresent(Url.class)){
+                    Url url = method.getAnnotation(Url.class);
+                    path = url.path();
+                    if (path.equals("")) {
+                        throw new ServletException("Redirection d'URL non trouvée");
+                    }
+                } else {
+                    throw new ServletException("Redirection d'URL non trouvée");
+                }
+                if(method.isAnnotationPresent(Post.class)){
+                    Mapper map = new Mapper(method.getDeclaringClass().getName(), method.getName(), Post.class);
+                    if (!mapping.containsKey(path)) {
+                        mapping.put(path, map);
+                    } else {
+                        throw new ServletException("Duplication d'URL trouvée");
+                    }
+                } else if(method.isAnnotationPresent(Get.class) || isGetNotPresent){
+                    Mapper map = new Mapper(method.getDeclaringClass().getName(), method.getName(), Get.class);
+                    if (!mapping.containsKey(path)) {
+                        mapping.put(path, map);
                     } else {
                         throw new ServletException("Duplication d'URL trouvée");
                     }

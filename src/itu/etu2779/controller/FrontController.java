@@ -53,10 +53,16 @@ public class FrontController extends HttpServlet {
         String path = req.getRequestURI();
         String[] parts = path.split("/");
         String urlTyped = parts[parts.length - 1];
+
+        String getPost = req.getMethod();
+
         for (String cle : mapping.keySet()) {
             if (cle.equals(urlTyped)) {
                 try {
                     Mapper map = mapping.get(urlTyped);
+                    if (!map.getVerb().getSimpleName().toUpperCase().equals(getPost)) {
+                        throw new ServletException("Methodes non correlants");
+                    }
                     HttpSession session = req.getSession();
                     CustomSession[] cs = new CustomSession[1];
                     Class<?> clazz = Class.forName(map.getNomClasse());
@@ -105,8 +111,8 @@ public class FrontController extends HttpServlet {
                     }
                     throw new ServletException("La valeur du type de retour de la fonction doit être de type String ou ModelAndView");
                 } catch (ClassNotFoundException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | InstantiationException | NoSuchMethodException e) {
-                    out.println(e);
-                    // throw new ServletException(e);
+                    // out.println(e);
+                    throw new ServletException(e);
                 } 
             }
         }

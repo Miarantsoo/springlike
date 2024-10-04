@@ -1,5 +1,6 @@
 package itu.etu2779.utils;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -12,10 +13,21 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
+import itu.etu2779.annotation.Get;
 import itu.etu2779.annotation.Param;
 import itu.etu2779.servlet.CustomSession;
 
 public class Utilitaire {
+
+    public static boolean isGetNotPresent(Method m){
+        Annotation [] annotations = m.getAnnotations();
+        for(Annotation annotation: annotations){
+            if (annotation.annotationType().equals(Get.class)) {
+                return false;
+            }
+        }
+        return true;
+    }
     
     public static Object getRealParameterType(Class<?> clazz, String parameter) throws ServletException{
         Object result = null;

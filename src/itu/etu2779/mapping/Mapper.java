@@ -4,12 +4,14 @@ public class Mapper {
     
     String nomClasse;
     String nomMethode;
+    Class<?> verb;
 
     public Mapper() {}
 
-    public Mapper(String nomClasse, String nomMethode){
+    public Mapper(String nomClasse, String nomMethode, Class<?> verb){
         setNomClasse(nomClasse);
         setNomMethode(nomMethode);
+        setVerb(verb);
     }
 
     public String getNomClasse() {
@@ -28,4 +30,12 @@ public class Mapper {
         this.nomMethode = nomMethode;
     }
 
+    public Class<?> getVerb(){
+        return this.verb;
+    }
+
+    public void setVerb(Class<?> verb){
+        this.verb = verb;
+    }
+ 
 }
