@@ -42,11 +42,11 @@ public class LoadController {
         }
 
         for (Class<?> clazz : nomController) {
-            Method [] methods = clazz.getDeclaredMethods();
+            Method[] methods = clazz.getDeclaredMethods();
             for (Method method : methods) {
                 boolean isGetNotPresent = Utilitaire.isGetNotPresent(method);
                 String path = "";
-                if(method.isAnnotationPresent(Url.class)){
+                if (method.isAnnotationPresent(Url.class)) {
                     Url url = method.getAnnotation(Url.class);
                     path = url.path();
                     if (path.equals("")) {
@@ -55,19 +55,31 @@ public class LoadController {
                 } else {
                     throw new ServletException("Redirection d'URL non trouvée");
                 }
-                if(method.isAnnotationPresent(Post.class)){
-                    Mapper map = new Mapper(method.getDeclaringClass().getName(), method.getName(), Post.class);
-                    if (!mapping.containsKey(path)) {
-                        mapping.put(path, map);
-                    } else {
-                        throw new ServletException("Duplication d'URL trouvée");
-                    }
-                } else if(method.isAnnotationPresent(Get.class) || isGetNotPresent){
-                    Mapper map = new Mapper(method.getDeclaringClass().getName(), method.getName(), Get.class);
-                    if (!mapping.containsKey(path)) {
-                        mapping.put(path, map);
-                    } else {
-                        throw new ServletException("Duplication d'URL trouvée");
+        
+                Mapper map = new Mapper(method.getDeclaringClass().getName());
+                VerbMethod verbMethod = null;
+        
+                if (method.isAnnotationPresent(Post.class)) {
+                    verbMethod = new VerbMethod("POST", method);
+                } else if (method.isAnnotationPresent(Get.class) || isGetNotPresent) {
+                    verbMethod = new VerbMethod("GET", method);
+                }
+        
+                map.addVerbMethod(verbMethod);
+        
+                if (!mapping.containsKey(path)) {
+                    mapping.put(path, map);
+                } else {
+                    Mapper mapExistant = mapping.get(path);
+                    for (VerbMethod verbMethodDedans : mapExistant.getVerbMethod()) {
+                        if (verbMethodDedans.getMethod().getName().equals(verbMethod.getMethod().getName())) {
+                            if (verbMethodDedans.getVerb().equals(verbMethod.getVerb())) {
+                                throw new ServletException("Duplication d'URL trouvée");
+                            } else {
+                                mapExistant.addVerbMethod(verbMethod);
+                                break;
+                            }
+                        }
                     }
                 }
             }

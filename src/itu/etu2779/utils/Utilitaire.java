@@ -8,6 +8,8 @@ import java.lang.reflect.Parameter;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Iterator;
+import java.util.Set;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -15,6 +17,7 @@ import javax.servlet.http.HttpSession;
 
 import itu.etu2779.annotation.Get;
 import itu.etu2779.annotation.Param;
+import itu.etu2779.mapping.VerbMethod;
 import itu.etu2779.servlet.CustomSession;
 
 public class Utilitaire {
@@ -27,6 +30,16 @@ public class Utilitaire {
             }
         }
         return true;
+    }
+
+    public static String methodNameFromSet(Set<VerbMethod> verbMethod) {
+        String result = "";
+        Iterator<VerbMethod> iterator = verbMethod.iterator();
+        if (iterator.hasNext()) {
+            VerbMethod element = iterator.next();
+            result += element.getMethod();
+        }
+        return result;
     }
     
     public static Object getRealParameterType(Class<?> clazz, String parameter) throws ServletException{
@@ -110,6 +123,26 @@ public class Utilitaire {
             }
         }
         return null;
+    }
+
+    public static boolean memeMethode(Method method1, Method method2) {
+        if (!method1.getName().equals(method2.getName())) {
+            return false;
+        }
+        if (!method1.getReturnType().equals(method2.getReturnType())) {
+            return false;
+        }
+        Class<?>[] paramTypes1 = method1.getParameterTypes();
+        Class<?>[] paramTypes2 = method2.getParameterTypes();
+        if (paramTypes1.length != paramTypes2.length) {
+            return false;
+        }
+        for (int i = 0; i < paramTypes1.length; i++) {
+            if (!paramTypes1[i].equals(paramTypes2[i])) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public static Object invokeMethod(Class<?> clazz, Method method, HttpServletRequest req, HttpSession session, CustomSession[] cs) throws ServletException, IllegalAccessException, InvocationTargetException, InstantiationException, NoSuchMethodException, SecurityException{
