@@ -31,10 +31,16 @@ public class FrontController extends HttpServlet {
     protected List<Class<?>> nomController = new ArrayList<>();
     protected HashMap<String, Mapper> mapping = new HashMap<>();
 
+    private String initError = "";
+
     @Override
-    public void init() throws ServletException{
-        String controllerPackage = getServletConfig().getInitParameter("controllerChecker");
-        LoadController.load(controllerPackage, nomController, mapping);
+    public void init(){
+        try {
+            String controllerPackage = getServletConfig().getInitParameter("controllerChecker");
+            LoadController.load(controllerPackage, nomController, mapping);
+        } catch (ServletException e) {
+            initError += e.getLocalizedMessage();
+        }
     }
 
     @Override
@@ -50,6 +56,18 @@ public class FrontController extends HttpServlet {
     protected void processRequest(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
         res.setContentType("text/plain");
         PrintWriter out = res.getWriter();
+
+        if(!initError.equals("")){
+            res.setContentType("text/html");
+            res.setStatus(500);
+            out.println("<h1>SpringLike Error</h1>");
+            out.println("");
+            out.println("<h3>Status: "+res.getStatus()+"</h3>");
+            out.println("");
+            out.println("");
+            out.println("<p>Description: "+initError+"</p>");
+            return;
+        }
 
         String path = req.getRequestURI();
         String[] parts = path.split("/");
@@ -119,12 +137,27 @@ public class FrontController extends HttpServlet {
                         }
                     }
                     throw new ServletException("La valeur du type de retour de la fonction doit être de type String ou ModelAndView");
-                } catch (ClassNotFoundException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | InstantiationException | NoSuchMethodException e) {
-                    // out.println(e);
-                    throw new ServletException(e);
+                } catch (ClassNotFoundException | ServletException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | InstantiationException | NoSuchMethodException e) {
+                    res.setContentType("text/html");
+                    res.setStatus(500);
+                    out.println("<h1>SpringLike Error</h1>");
+                    out.println("");
+                    out.println("<h3>Status: "+res.getStatus()+"</h3>");
+                    out.println("");
+                    out.println("");
+                    out.println("<p>Description: "+e.getLocalizedMessage()+"</p>");
+                    return;
                 } 
             }
         }
-        res.sendError(HttpServletResponse.SC_NOT_FOUND, "Pas d'URL trouve");
+        // res.sendError(HttpServletResponse.SC_NOT_FOUND, "Pas d'URL trouve");
+        res.setContentType("text/html");
+        res.setStatus(404);
+        out.println("<h1>SpringLike Error</h1>");
+        out.println("");
+        out.println("<h3>Status: "+res.getStatus()+"</h3>");
+        out.println("");
+        out.println("");
+        out.println("<p>Description: Pas d'URL trouvé</p>");
     }
 }
