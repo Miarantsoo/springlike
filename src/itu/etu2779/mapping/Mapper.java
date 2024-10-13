@@ -1,17 +1,20 @@
 package itu.etu2779.mapping;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class Mapper {
     
-    String nomClasse;
-    String nomMethode;
-    Class<?> verb;
+    private String nomClasse;
+    private Set<VerbMethod> verbMethod; 
 
-    public Mapper() {}
-
-    public Mapper(String nomClasse, String nomMethode, Class<?> verb){
+    public Mapper(String nomClasse) {
         setNomClasse(nomClasse);
-        setNomMethode(nomMethode);
-        setVerb(verb);
+        setVerbMethod(new HashSet<>());
+    }
+
+    public void addVerbMethod(VerbMethod vm) {
+        verbMethod.add(vm);
     }
 
     public String getNomClasse() {
@@ -22,20 +25,12 @@ public class Mapper {
         this.nomClasse = nomClasse;
     }
 
-    public String getNomMethode() {
-        return this.nomMethode;
+    public Set<VerbMethod> getVerbMethod() {
+        return verbMethod;
     }
 
-    public void setNomMethode(String nomMethode) {
-        this.nomMethode = nomMethode;
-    }
-
-    public Class<?> getVerb(){
-        return this.verb;
-    }
-
-    public void setVerb(Class<?> verb){
-        this.verb = verb;
+    public void setVerbMethod(Set<VerbMethod> verbMethod) {
+        this.verbMethod = verbMethod;
     }
  
 }

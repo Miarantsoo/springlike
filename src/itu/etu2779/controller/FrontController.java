@@ -21,14 +21,15 @@ import com.google.gson.Gson;
 import itu.etu2779.annotation.RestAPI;
 import itu.etu2779.mapping.LoadController;
 import itu.etu2779.mapping.Mapper;
+import itu.etu2779.mapping.VerbMethod;
 import itu.etu2779.servlet.CustomSession;
 import itu.etu2779.servlet.ModelAndView;
 import itu.etu2779.utils.Utilitaire;
 
 public class FrontController extends HttpServlet {
 
-    List<Class<?>> nomController = new ArrayList<>();
-    HashMap<String, Mapper> mapping = new HashMap<>();
+    protected List<Class<?>> nomController = new ArrayList<>();
+    protected HashMap<String, Mapper> mapping = new HashMap<>();
 
     @Override
     public void init() throws ServletException{
@@ -47,64 +48,72 @@ public class FrontController extends HttpServlet {
     }
 
     protected void processRequest(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
-        res.setContentType("application/json");
+        res.setContentType("text/plain");
         PrintWriter out = res.getWriter();
 
         String path = req.getRequestURI();
         String[] parts = path.split("/");
         String urlTyped = parts[parts.length - 1];
 
-        String getPost = req.getMethod();
+        String getVerb = req.getMethod();
 
         for (String cle : mapping.keySet()) {
             if (cle.equals(urlTyped)) {
                 try {
                     Mapper map = mapping.get(urlTyped);
-                    if (!map.getVerb().getSimpleName().toUpperCase().equals(getPost)) {
-                        throw new ServletException("Methodes non correlants");
+                    int nbrNonCorrelant = 0;
+                    boolean contientDeuxVerbMethod = map.getVerbMethod().size() > 1 ? true : false;
+                    for (VerbMethod vm : map.getVerbMethod()) {
+                        if (!vm.getVerb().equals(getVerb)) {
+                            nbrNonCorrelant += 1;
+                        }
                     }
+                    if (nbrNonCorrelant == 1 && !contientDeuxVerbMethod) throw new ServletException("Methodes non correlants");  
                     HttpSession session = req.getSession();
                     CustomSession[] cs = new CustomSession[1];
                     Class<?> clazz = Class.forName(map.getNomClasse());
 
                     Method[] methods = clazz.getDeclaredMethods();
                     for (int i = 0; i < methods.length; i++) {
-                        if (methods[i].getName().equals(map.getNomMethode())) {
-                            Object objet = Utilitaire.invokeMethod(clazz, methods[i], req, session, cs);
-                            if (methods[i].isAnnotationPresent(RestAPI.class)) {
-                                Gson gson = new Gson();
-                                if (objet instanceof ModelAndView) {
-                                    ModelAndView model = (ModelAndView) objet;
-                                    String json = gson.toJson(model.getData());
-                                    out.println(json);
+                        for (VerbMethod vm : map.getVerbMethod()) {
+                            if (Utilitaire.memeMethode(methods[i], vm.getMethod()) && getVerb.equals(vm.getVerb())) {
+                                Object objet = Utilitaire.invokeMethod(clazz, methods[i], req, session, cs);
+                                if (methods[i].isAnnotationPresent(RestAPI.class)) {
+                                    res.setContentType("application/json");
+                                    Gson gson = new Gson();
+                                    if (objet instanceof ModelAndView) {
+                                        ModelAndView model = (ModelAndView) objet;
+                                        String json = gson.toJson(model.getData());
+                                        out.println(json);
+                                    } else {
+                                        String json = gson.toJson(objet);
+                                        out.println(json);
+                                    }
                                 } else {
-                                    String json = gson.toJson(objet);
-                                    out.println(json);
-                                }
-                            } else {
-                                if (objet instanceof String) {
-                                    String resultat = (String) objet;
-                                    out.println(String.format("Resultat: %s", resultat));
-    
-                                    if (cs[0] != null) {
-                                        cs[0].customToHttpSession(session);
+                                    if (objet instanceof String) {
+                                        String resultat = (String) objet;
+                                        out.println(String.format("Resultat: %s", resultat));
+        
+                                        if (cs[0] != null) {
+                                            cs[0].customToHttpSession(session);
+                                        }
+        
+                                        return;
+                                    } else if(objet instanceof ModelAndView) {                    
+                                        ModelAndView model = (ModelAndView) objet;
+                                        
+                                        for (Map.Entry<String, Object> entry : model.getData().entrySet()) {
+                                            req.setAttribute(entry.getKey(), entry.getValue());
+                                        }
+        
+                                        if (cs[0] != null) {
+                                            cs[0].customToHttpSession(session);
+                                        }
+        
+                                        RequestDispatcher dispatcher = req.getRequestDispatcher(model.getUrl());
+                                        dispatcher.forward(req, res);
+                                        return;
                                     }
-    
-                                    return;
-                                } else if(objet instanceof ModelAndView) {                    
-                                    ModelAndView model = (ModelAndView) objet;
-                                    
-                                    for (Map.Entry<String, Object> entry : model.getData().entrySet()) {
-                                        req.setAttribute(entry.getKey(), entry.getValue());
-                                    }
-    
-                                    if (cs[0] != null) {
-                                        cs[0].customToHttpSession(session);
-                                    }
-    
-                                    RequestDispatcher dispatcher = req.getRequestDispatcher(model.getUrl());
-                                    dispatcher.forward(req, res);
-                                    return;
                                 }
                             }
                         }
