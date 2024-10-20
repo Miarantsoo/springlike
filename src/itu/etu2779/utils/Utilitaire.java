@@ -1,5 +1,8 @@
 package itu.etu2779.utils;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -14,6 +17,7 @@ import java.util.Set;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
+import javax.servlet.http.Part;
 
 import itu.etu2779.annotation.Get;
 import itu.etu2779.annotation.Param;
@@ -145,7 +149,28 @@ public class Utilitaire {
         return true;
     }
 
-    public static Object invokeMethod(Class<?> clazz, Method method, HttpServletRequest req, HttpSession session, CustomSession[] cs) throws ServletException, IllegalAccessException, InvocationTargetException, InstantiationException, NoSuchMethodException, SecurityException{
+    private static String getFileName(Part part) {
+        String contentDisp = part.getHeader("content-disposition");
+        String[] tokens = contentDisp.split(";");
+        for (String token : tokens) {
+            if (token.trim().startsWith("filename")) {
+                return token.substring(token.indexOf("=") + 2, token.length()-1);
+            }
+        }
+        return "";
+    }
+
+    private static byte[] getFileBytes(InputStream input) throws IOException {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        byte[] buffer = new byte[4096];
+        int n = 0;
+        while (-1 != (n = input.read(buffer))) {
+            output.write(buffer, 0, n);
+        }
+        return output.toByteArray();
+    }
+
+    public static Object invokeMethod(Class<?> clazz, Method method, HttpServletRequest req, HttpSession session, CustomSession[] cs) throws ServletException, IllegalAccessException, InvocationTargetException, InstantiationException, NoSuchMethodException, SecurityException, IOException{
         Parameter[] param = method.getParameters();
         Class<?>[] parameterTypes = method.getParameterTypes();
         String [] name = parameterTypes.length != 0 ? new String[param.length] : null;
@@ -161,9 +186,23 @@ public class Utilitaire {
                     fields[i].setAccessible(true);
                     Class<?> fieldClass = fields[i].getType();
                     if (param[j].isAnnotationPresent(Param.class)) {
-                        String annotationValue = param[j].getAnnotation(Param.class).name()+"."+fields[i].getName();
-                        String parameter = req.getParameter(annotationValue);
-                        objectValues[i] = Utilitaire.getRealParameterType(fieldClass, parameter);
+                        String annotationValue = param[j].getAnnotation(Param.class).name()+".";
+                        if (fields[i].getName().contains("fileName")) {
+                            annotationValue += fields[i].getName().split("fileName")[1];
+                            Part filePart = req.getPart(annotationValue);
+                            String fileName = Utilitaire.getFileName(filePart);
+                            objectValues[i] = Utilitaire.getRealParameterType(fieldClass, fileName);
+                        } else if (fields[i].getName().contains("bytes")) {
+                            annotationValue += fields[i].getName().split("bytes")[1];
+                            Part filePart = req.getPart(annotationValue);
+                            InputStream fileContent = filePart.getInputStream();
+                            byte[] fileBytes = Utilitaire.getFileBytes(fileContent);
+                            objectValues[i] = fileBytes;
+                        } else {
+                            annotationValue += fields[i].getName();
+                            String parameter = req.getParameter(annotationValue);
+                            objectValues[i] = Utilitaire.getRealParameterType(fieldClass, parameter);
+                        }
                     } else {
                         throw new ServletException("ETU002779 - Annotation @Param manquante");
                         // String parameter = req.getParameter(name[j]+"."+fields[i].getName());
