@@ -19,6 +19,11 @@ import javax.servlet.http.HttpSession;
 import com.google.gson.Gson;
 
 import itu.etu2779.annotation.RestAPI;
+import itu.etu2779.exception.NotEmailException;
+import itu.etu2779.exception.NotNumericException;
+import itu.etu2779.exception.OutOfLengthException;
+import itu.etu2779.exception.OutOfRangeException;
+import itu.etu2779.exception.RequiredException;
 import itu.etu2779.mapping.LoadController;
 import itu.etu2779.mapping.Mapper;
 import itu.etu2779.mapping.VerbMethod;
@@ -137,7 +142,7 @@ public class FrontController extends HttpServlet {
                         }
                     }
                     throw new ServletException("La valeur du type de retour de la fonction doit être de type String ou ModelAndView");
-                } catch (ClassNotFoundException | ServletException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | InstantiationException | NoSuchMethodException e) {
+                } catch (ClassNotFoundException | ServletException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | InstantiationException | NoSuchMethodException | NotNumericException | NotEmailException | OutOfLengthException | OutOfRangeException | RequiredException e) {
                     res.setContentType("text/html");
                     res.setStatus(500);
                     out.println("<h1>SpringLike Error</h1>");

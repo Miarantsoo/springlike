@@ -21,6 +21,11 @@ import javax.servlet.http.Part;
 
 import itu.etu2779.annotation.Get;
 import itu.etu2779.annotation.Param;
+import itu.etu2779.exception.NotEmailException;
+import itu.etu2779.exception.NotNumericException;
+import itu.etu2779.exception.OutOfLengthException;
+import itu.etu2779.exception.OutOfRangeException;
+import itu.etu2779.exception.RequiredException;
 import itu.etu2779.mapping.VerbMethod;
 import itu.etu2779.servlet.CustomSession;
 
@@ -170,7 +175,20 @@ public class Utilitaire {
         return output.toByteArray();
     }
 
-    public static Object invokeMethod(Class<?> clazz, Method method, HttpServletRequest req, HttpSession session, CustomSession[] cs) throws ServletException, IllegalAccessException, InvocationTargetException, InstantiationException, NoSuchMethodException, SecurityException, IOException{
+    public static Object invokeMethod(Class<?> clazz, Method method, HttpServletRequest req, HttpSession session, CustomSession[] cs) throws 
+        ServletException,
+        IllegalAccessException, 
+        InvocationTargetException, 
+        InstantiationException, 
+        NoSuchMethodException, 
+        SecurityException, 
+        IOException, 
+        NotNumericException, 
+        NotEmailException, 
+        OutOfLengthException, 
+        OutOfRangeException, 
+        RequiredException
+    {
         Parameter[] param = method.getParameters();
         Class<?>[] parameterTypes = method.getParameterTypes();
         String [] name = parameterTypes.length != 0 ? new String[param.length] : null;
@@ -212,6 +230,7 @@ public class Utilitaire {
                     Method met = objectClass.getDeclaredMethod(setter, fieldClass);
                     met.invoke(obj, objectValues[i]);
                 }
+                ValidationUtils.verifyValidations(obj);
                 values[j] = obj;
             } else if(isASession(param[j].getType())) {
                 Class<?> objectClass = param[j].getType();
