@@ -46,127 +46,98 @@ public class ValidationUtils {
         }
     }
 
+    private static boolean isFieldNumericType(Field f) {
+        Class<?> clazz = f.getType();
+        switch (clazz.getSimpleName()) {
+            case "Integer":
+                return true;
+            case "Double":
+                return true;
+            case "int":
+                return true;
+            case "double":
+                return true;
+            default:
+                return false;
+        }
+    }
 
-    public static void verifyRequired(Object obj) throws RequiredException {
-        Class<?> clazz = obj.getClass();
-        
-        for (Field field : clazz.getDeclaredFields()) {
-            if (field.isAnnotationPresent(Required.class)) {
-                field.setAccessible(true); 
-                try {
-                    Object value = field.get(obj);
 
-                    if (value == null) {
-                        throw new RequiredException(field.getName());
-                    }
+    public static void verifyRequired(Field field, Object obj) throws RequiredException {
+        if (field.isAnnotationPresent(Required.class)) {
+            field.setAccessible(true); 
+            Object value = obj;
 
-                    if(field.getType().getName().equals("java.lang.String")) {
-                        if (value.equals("null")) {
-                            throw new RequiredException(field.getName());
-                        }
-                    }
+            if (value == null) {
+                throw new RequiredException(field.getName());
+            }
 
-                    if (field.getType().isPrimitive()) {
-                        if (field.getType() == int.class && (Integer)value == 0) {
-                            throw new RequiredException(field.getName());
-                        } else if (field.getType() == boolean.class && (Boolean)value == false) {
-                            throw new RequiredException(field.getName());
-                        } else if (field.getType() == double.class && (Double)value == 0.0) {
-                            throw new RequiredException(field.getName());
-                        }
-                    }
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace();
+            if(field.getType().getName().equals("java.lang.String")) {
+                if (value.equals("null")) {
+                    throw new RequiredException(field.getName());
+                }
+            }
+
+            if (field.getType().isPrimitive()) {
+                if (field.getType() == int.class && (Integer)value == 0) {
+                    throw new RequiredException(field.getName());
+                } else if (field.getType() == boolean.class && (Boolean)value == false) {
+                    throw new RequiredException(field.getName());
+                } else if (field.getType() == double.class && (Double)value == 0.0) {
+                    throw new RequiredException(field.getName());
                 }
             }
         }
     }
     
-    public static void verifyLength(Object obj) throws OutOfLengthException {
-        Class<?> clazz = obj.getClass();
-        
-        for (Field field : clazz.getDeclaredFields()) {
-            if (field.isAnnotationPresent(Length.class)) {
-                field.setAccessible(true); 
-                try {
-                    Object value = field.get(obj);
-                    Length len = field.getAnnotation(Length.class);
+    public static void verifyLength(Field field, Object obj) throws OutOfLengthException {
+        if (field.isAnnotationPresent(Length.class)) {
+            field.setAccessible(true); 
+            Object value = obj;
+            Length len = field.getAnnotation(Length.class);
 
-                    if (!value.getClass().equals(String.class)) {
-                        throw new OutOfLengthException(field.getName(), "CLASS", len.x());
-                    }
-    
-                    if (((String) value).length() > len.x()) {
-                        throw new OutOfLengthException(field.getName(), "LENGTH", len.x());
-                    }
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace();
-                }
+            if (!value.getClass().equals(String.class)) {
+                throw new OutOfLengthException(field.getName(), "CLASS", len.x());
+            }
+
+            if (((String) value).length() > len.x()) {
+                throw new OutOfLengthException(field.getName(), "LENGTH", len.x());
             }
         }
     }
 
-    public static void verifyRange(Object obj) throws OutOfRangeException {
-        Class<?> clazz = obj.getClass();
-        
-        for (Field field : clazz.getDeclaredFields()) {
-            if (field.isAnnotationPresent(Range.class)) {
-                field.setAccessible(true); 
-                try {
-                    Object value = field.get(obj);
-                    Range ran = field.getAnnotation(Range.class);
+    public static void verifyRange(Field field, Object obj) throws OutOfRangeException {
+        if (field.isAnnotationPresent(Range.class)) {
+            field.setAccessible(true); 
+            Object value = obj;
+            Range ran = field.getAnnotation(Range.class);
 
-                    if (!isNumericType(value)) {
-                        throw new OutOfRangeException(field.getName(), "CLASS", ran.begin(), ran.end());
-                    }
-    
-                    if (!((Double.valueOf((Integer) value)) > ran.begin() && ((Double.valueOf((Integer) value)) < ran.end()))) {
-                        throw new OutOfRangeException(field.getName(), "RANGE", ran.begin(), ran.end());
-                    }
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace();
-                }
+            if (!isNumericType(value)) {
+                throw new OutOfRangeException(field.getName(), "CLASS", ran.begin(), ran.end());
+            }
+
+            if (!((Double.valueOf((Integer) value)) > ran.begin() && ((Double.valueOf((Integer) value)) < ran.end()))) {
+                throw new OutOfRangeException(field.getName(), "RANGE", ran.begin(), ran.end());
             }
         }
     }
 
-    public static void verifyEmail(Object obj) throws NotEmailException {
-        Class<?> clazz = obj.getClass();
-        System.out.println(clazz.getName());
-        
-        for (Field field : clazz.getDeclaredFields()) {
-            if (field.isAnnotationPresent(Email.class)) {
-                field.setAccessible(true); 
-                try {
-                    Object value = field.get(obj);
+    public static void verifyEmail(Field field, Object obj) throws NotEmailException {
+        if (field.isAnnotationPresent(Email.class)) {
+            field.setAccessible(true); 
+                Object value = obj;
 
-                    if (!isEmail((String) value)) {
-                        throw new NotEmailException(field.getName());
-                    }
-
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace();
+                if (!isEmail((String) value)) {
+                    throw new NotEmailException(field.getName());
                 }
-            }
         }
     }
 
-    public static void verifyNumeric(Object obj) throws NotNumericException {
-        Class<?> clazz = obj.getClass();
-        
-        for (Field field : clazz.getDeclaredFields()) {
-            if (field.isAnnotationPresent(Numeric.class)) {
-                field.setAccessible(true); 
-                try {
-                    Object value = field.get(obj);
-
-                    if (!isNumericType(value)) {
-                        throw new NotNumericException(field.getName());
-                    }
-
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace();
-                }
+    public static void verifyNumeric(Field field) throws NotNumericException {
+        if (field.isAnnotationPresent(Numeric.class)) {
+            field.setAccessible(true); 
+            if (!isFieldNumericType(field)) {
+                throw new NotNumericException(field.getName());
             }
         }
     }
@@ -189,18 +160,21 @@ public class ValidationUtils {
     //     }
     // }
 
-    public static void verifyValidations(Object obj) throws 
-        NotNumericException, 
-        NotEmailException, 
-        OutOfLengthException, 
-        OutOfRangeException, 
-        RequiredException 
+    public static void verifyPreValidations(Field field) throws 
+        NotNumericException
     {
-        verifyNumeric(obj);
-        verifyEmail(obj);
-        verifyLength(obj);
-        verifyRange(obj);
-        verifyRequired(obj);
+        verifyNumeric(field);
+    }
+    
+    public static void verifyValidations(Field f, Object obj) throws 
+    NotEmailException, 
+    OutOfLengthException, 
+    OutOfRangeException, RequiredException
+    {
+        verifyRequired(f, obj);
+        verifyEmail(f, obj);
+        verifyLength(f, obj);
+        verifyRange(f, obj);
     }
 
 }

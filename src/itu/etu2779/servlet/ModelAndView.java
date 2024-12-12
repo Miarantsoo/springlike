@@ -6,6 +6,7 @@ public class ModelAndView {
     
     private String url;
     private HashMap<String, Object> data = new HashMap<>();
+    private String error;
 
     public ModelAndView(String url) {
         setUrl(url);
@@ -30,5 +31,15 @@ public class ModelAndView {
     public void addObject(String cle, Object valeur){
         getData().put(cle, valeur);
     }
+
+    public String getError() {
+        return error;
+    }
+
+    public void setError(String error) {
+        this.error = error;
+    }
+
+
     
 }
