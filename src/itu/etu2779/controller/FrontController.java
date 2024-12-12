@@ -79,7 +79,10 @@ public class FrontController extends HttpServlet {
         String urlTyped = parts[parts.length - 1];
 
         String getVerb = req.getMethod();
-
+        if (req.getAttribute("error")!=null) {
+            getVerb = "GET";
+        }
+        
         for (String cle : mapping.keySet()) {
             if (cle.equals(urlTyped)) {
                 try {
@@ -91,7 +94,8 @@ public class FrontController extends HttpServlet {
                             nbrNonCorrelant += 1;
                         }
                     }
-                    if (nbrNonCorrelant == 1 && !contientDeuxVerbMethod) throw new ServletException("Methodes non correlants");  
+
+                    if (nbrNonCorrelant == 1 && !contientDeuxVerbMethod && req.getAttribute("error")==null) throw new ServletException("Methodes non correlants");  
                     HttpSession session = req.getSession();
                     CustomSession[] cs = new CustomSession[1];
                     Class<?> clazz = Class.forName(map.getNomClasse());
@@ -99,8 +103,8 @@ public class FrontController extends HttpServlet {
                     Method[] methods = clazz.getDeclaredMethods();
                     for (int i = 0; i < methods.length; i++) {
                         for (VerbMethod vm : map.getVerbMethod()) {
-                            if (Utilitaire.memeMethode(methods[i], vm.getMethod()) && getVerb.equals(vm.getVerb())) {
-                                Object objet = Utilitaire.invokeMethod(clazz, methods[i], req, session, cs);
+                            if (Utilitaire.memeMethode(methods[i], vm.getMethod())) {
+                                Object objet = Utilitaire.invokeMethod(clazz, methods[i], req, res, session, cs);
                                 if (methods[i].isAnnotationPresent(RestAPI.class)) {
                                     res.setContentType("application/json");
                                     Gson gson = new Gson();
@@ -112,6 +116,7 @@ public class FrontController extends HttpServlet {
                                         String json = gson.toJson(objet);
                                         out.println(json);
                                     }
+                                    return;
                                 } else {
                                     if (objet instanceof String) {
                                         String resultat = (String) objet;

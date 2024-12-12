@@ -11,11 +11,14 @@ import java.lang.reflect.Parameter;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
 
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.Part;
 
@@ -28,6 +31,7 @@ import itu.etu2779.exception.OutOfRangeException;
 import itu.etu2779.exception.RequiredException;
 import itu.etu2779.mapping.VerbMethod;
 import itu.etu2779.servlet.CustomSession;
+import itu.etu2779.servlet.ModelAndView;
 
 public class Utilitaire {
 
@@ -51,9 +55,10 @@ public class Utilitaire {
         return result;
     }
     
-    public static Object getRealParameterType(Class<?> clazz, String parameter) throws ServletException{
+    public static Object getRealParameterType(Class<?> clazz, String parameter) throws ServletException, InstantiationException, IllegalAccessException{
         Object result = null;
         try {
+
             switch (clazz.getName()) {
                 case "java.lang.String":
                     if (parameter.equals("")) {
@@ -62,6 +67,7 @@ public class Utilitaire {
                         result = parameter;
                     }
                     break;
+                case "java.lang.Integer":
                 case "int":
                     if (parameter.equals("")) {
                         result = 0;
@@ -69,6 +75,7 @@ public class Utilitaire {
                         result = Integer.parseInt(parameter);
                     }
                     break;
+                case "java.lang.Double":
                 case "double":
                     if (parameter.equals("")) {
                         result = 0.0;
@@ -86,9 +93,71 @@ public class Utilitaire {
                     }
                     break;
             }
+
             return result;
         } catch (ClassCastException | ParseException | NumberFormatException e) {
             throw new ServletException("Type de parametre incoherent avec sa valeur");
+        }
+    }
+    
+    public static Object getRealParameterType(Class<?> clazz, String annotationValue, String parameter, Field field, Object obj, HashMap<String, String[]> rTf) throws ServletException, InstantiationException, IllegalAccessException{
+        Object result = null;
+        try {
+            try {
+                ValidationUtils.verifyPreValidations(field);
+            } catch (NotNumericException e) {
+                String[] details = new String[2];
+                details[0] = parameter;
+                details[1] = e.getMessage();
+                rTf.put(annotationValue, details);
+            }
+            
+            switch (clazz.getName()) {
+                case "java.lang.String":
+                    if (parameter.equals("")) {
+                        result = "null";
+                    } else {
+                        result = parameter;
+                    }
+                    break;
+                case "java.lang.Integer":
+                case "int":
+                    if (parameter.equals("")) {
+                        result = 0;
+                    } else {
+                        result = Integer.parseInt(parameter);
+                    }
+                    break;
+                case "java.lang.Double":
+                case "double":
+                    if (parameter.equals("")) {
+                        result = 0.0;
+                    } else {
+                        result = Double.parseDouble(parameter);
+                    }
+                    break;
+                case "java.util.Date":
+                    if(parameter.equals("")){
+                        result = new Date();
+                    } else {
+                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                        Date date = sdf.parse(parameter);
+                        result = date;
+                    }
+                    break;
+            }
+
+            try {
+                ValidationUtils.verifyValidations(field, result);
+            } catch (NotEmailException | OutOfLengthException | OutOfRangeException | RequiredException e) {
+                String[] details = new String[2];
+                details[0] = parameter;
+                details[1] = e.getMessage();
+                rTf.put(annotationValue, details);
+            }
+            return result;
+        } catch (ClassCastException | ParseException | NumberFormatException e) {
+            throw new ServletException("Une erreur est survenue durant le procede");
         }
     }
 
@@ -175,7 +244,7 @@ public class Utilitaire {
         return output.toByteArray();
     }
 
-    public static Object invokeMethod(Class<?> clazz, Method method, HttpServletRequest req, HttpSession session, CustomSession[] cs) throws 
+    public static Object invokeMethod(Class<?> clazz, Method method, HttpServletRequest req, HttpServletResponse resp, HttpSession session, CustomSession[] cs) throws 
         ServletException,
         IllegalAccessException, 
         InvocationTargetException, 
@@ -193,6 +262,7 @@ public class Utilitaire {
         Class<?>[] parameterTypes = method.getParameterTypes();
         String [] name = parameterTypes.length != 0 ? new String[param.length] : null;
         Object[] values = parameterTypes.length != 0 ? new Object[param.length] : null;
+        HashMap<String, String[]> redirectToForm = new HashMap<>(); 
         for (int j = 0; j < param.length; j++) {
             name[j] = param[j].getName();
             if (isAnObject(param[j].getType())) {
@@ -209,7 +279,7 @@ public class Utilitaire {
                             annotationValue += fields[i].getName().split("fileName")[1];
                             Part filePart = req.getPart(annotationValue);
                             String fileName = Utilitaire.getFileName(filePart);
-                            objectValues[i] = Utilitaire.getRealParameterType(fieldClass, fileName);
+                            objectValues[i] = Utilitaire.getRealParameterType(fieldClass, annotationValue, fileName, fields[i], obj, redirectToForm);
                         } else if (fields[i].getName().contains("bytes")) {
                             annotationValue += fields[i].getName().split("bytes")[1];
                             Part filePart = req.getPart(annotationValue);
@@ -219,7 +289,7 @@ public class Utilitaire {
                         } else {
                             annotationValue += fields[i].getName();
                             String parameter = req.getParameter(annotationValue);
-                            objectValues[i] = Utilitaire.getRealParameterType(fieldClass, parameter);
+                            objectValues[i] = Utilitaire.getRealParameterType(fieldClass, annotationValue, parameter, fields[i], obj, redirectToForm);
                         }
                     } else {
                         throw new ServletException("ETU002779 - Annotation @Param manquante");
@@ -230,7 +300,6 @@ public class Utilitaire {
                     Method met = objectClass.getDeclaredMethod(setter, fieldClass);
                     met.invoke(obj, objectValues[i]);
                 }
-                ValidationUtils.verifyValidations(obj);
                 values[j] = obj;
             } else if(isASession(param[j].getType())) {
                 Class<?> objectClass = param[j].getType();
@@ -251,6 +320,14 @@ public class Utilitaire {
             }
         }
         Object objet = method.invoke(clazz.newInstance(), values);
+        if (redirectToForm.size() > 0) {
+            String header = ((ModelAndView) objet).getError();
+            RequestDispatcher dispatcher = req.getRequestDispatcher(header);
+            
+            req.setAttribute("error", redirectToForm);
+            dispatcher.forward(req, resp);
+            return null;
+        }
         return objet;
     }
 }
