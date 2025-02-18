@@ -20,6 +20,7 @@ import com.google.gson.Gson;
 
 import itu.etu2779.annotation.RestAPI;
 import itu.etu2779.annotation.auth.Auth;
+import itu.etu2779.annotation.auth.Public;
 import itu.etu2779.annotation.auth.RoleType;
 import itu.etu2779.exception.NotEmailException;
 import itu.etu2779.exception.NotNumericException;
@@ -117,7 +118,7 @@ public class FrontController extends HttpServlet {
                     for (int i = 0; i < methods.length; i++) {
                         for (VerbMethod vm : map.getVerbMethod()) {
                             if (Utilitaire.memeMethode(methods[i], vm.getMethod())) {
-                                if(methods[i].isAnnotationPresent(Auth.class)){
+                                if(clazz.isAnnotationPresent(Auth.class) && !methods[i].isAnnotationPresent(Public.class)) {
                                     String roleKey = getServletConfig().getInitParameter("role");
                                     String authKey = getServletConfig().getInitParameter("authentication");
                                     RoleType roleUser = roleKey != null ? (RoleType) session.getAttribute(roleKey) : null;
