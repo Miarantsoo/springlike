@@ -123,7 +123,7 @@ public class FrontController extends HttpServlet {
                                     String authKey = getServletConfig().getInitParameter("authentication");
                                     RoleType roleUser = roleKey != null ? (RoleType) session.getAttribute(roleKey) : null;
                                     Boolean auth = authKey != null ? (Boolean) session.getAttribute(authKey) : null;
-                                    Auth authAnnotation = methods[i].getAnnotation(Auth.class);
+                                    Auth authAnnotation = clazz.getAnnotation(Auth.class);
                                     if (auth == null || !auth) {
                                         throw new ServletException("Vous devez être authentifié(e) pour acceder à cette méthode");
                                     } 
@@ -152,6 +152,8 @@ public class FrontController extends HttpServlet {
                                         if (cs[0] != null) {
                                             cs[0].customToHttpSession(session);
                                         }
+
+                                        res.sendRedirect(getServletContext().getContextPath() + "/" + resultat);
         
                                         return;
                                     } else if(objet instanceof ModelAndView) {                    
