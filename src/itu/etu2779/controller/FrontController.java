@@ -19,6 +19,8 @@ import javax.servlet.http.HttpSession;
 import com.google.gson.Gson;
 
 import itu.etu2779.annotation.RestAPI;
+import itu.etu2779.annotation.auth.Auth;
+import itu.etu2779.annotation.auth.RoleType;
 import itu.etu2779.exception.NotEmailException;
 import itu.etu2779.exception.NotNumericException;
 import itu.etu2779.exception.OutOfLengthException;
@@ -75,6 +77,17 @@ public class FrontController extends HttpServlet {
         }
 
         String path = req.getRequestURI();
+
+        if (path.contains("/assets/")) {
+            RequestDispatcher defaultDispatcher = req.getServletContext().getNamedDispatcher("default");
+            try {
+                defaultDispatcher.forward(req, res);
+            } catch (ServletException | IOException e) {
+                res.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erreur lors du rendu des ressources statiques");
+            }
+            return;
+        }
+
         String[] parts = path.split("/");
         String urlTyped = parts[parts.length - 1];
 
@@ -104,6 +117,19 @@ public class FrontController extends HttpServlet {
                     for (int i = 0; i < methods.length; i++) {
                         for (VerbMethod vm : map.getVerbMethod()) {
                             if (Utilitaire.memeMethode(methods[i], vm.getMethod())) {
+                                if(methods[i].isAnnotationPresent(Auth.class)){
+                                    String roleKey = getServletConfig().getInitParameter("role");
+                                    String authKey = getServletConfig().getInitParameter("authentication");
+                                    RoleType roleUser = roleKey != null ? (RoleType) session.getAttribute(roleKey) : null;
+                                    Boolean auth = authKey != null ? (Boolean) session.getAttribute(authKey) : null;
+                                    Auth authAnnotation = methods[i].getAnnotation(Auth.class);
+                                    if (auth == null || !auth) {
+                                        throw new ServletException("Vous devez être authentifié(e) pour acceder à cette méthode");
+                                    } 
+                                    if (roleUser == null || authAnnotation.value().level > roleUser.level) {
+                                        throw new ServletException("Vous n'avez pas les droits nécessaires pour accéder à cette méthode");
+                                    }
+                                }
                                 Object objet = Utilitaire.invokeMethod(clazz, methods[i], req, res, session, cs);
                                 if (methods[i].isAnnotationPresent(RestAPI.class)) {
                                     res.setContentType("application/json");
