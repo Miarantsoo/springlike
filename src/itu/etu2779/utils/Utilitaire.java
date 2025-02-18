@@ -87,7 +87,12 @@ public class Utilitaire {
                     if(parameter.equals("")){
                         result = new Date();
                     } else {
-                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                        SimpleDateFormat sdf = null;
+                        if(parameter.contains("T")){
+                            sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm");
+                        } else {
+                            sdf = new SimpleDateFormat("yyyy-MM-dd");
+                        }
                         Date date = sdf.parse(parameter);
                         result = date;
                     }
@@ -140,7 +145,12 @@ public class Utilitaire {
                     if(parameter.equals("")){
                         result = new Date();
                     } else {
-                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                        SimpleDateFormat sdf = null;
+                        if(parameter.contains("T")){
+                            sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm");
+                        } else {
+                            sdf = new SimpleDateFormat("yyyy-MM-dd");
+                        }
                         Date date = sdf.parse(parameter);
                         result = date;
                     }
@@ -157,7 +167,7 @@ public class Utilitaire {
             }
             return result;
         } catch (ClassCastException | ParseException | NumberFormatException e) {
-            throw new ServletException("Une erreur est survenue durant le procede");
+            throw new ServletException("Une erreur est survenue durant le procédé: "+e.getMessage());
         }
     }
 
